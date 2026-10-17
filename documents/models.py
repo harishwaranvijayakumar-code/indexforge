@@ -86,6 +86,7 @@ class OutboxEvent(models.Model):
         default=Status.PENDING,
     )
     attempts = models.PositiveIntegerField(default=0)
+    claim_token = models.UUIDField(null=True, blank=True, editable=False)
     available_at = models.DateTimeField(default=timezone.now)
     created_at = models.DateTimeField(auto_now_add=True)
     processed_at = models.DateTimeField(null=True, blank=True)
