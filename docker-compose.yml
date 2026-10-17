@@ -1,0 +1,50 @@
+
+services:
+  postgres:
+    image: postgres:17
+    container_name: indexforge-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: indexforge
+      POSTGRES_USER: indexforge
+      POSTGRES_PASSWORD: local-development-password
+    ports:
+      - "5432:5432"
+    volumes:
+      - indexforge_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U indexforge -d indexforge",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  opensearch:
+    image: opensearchproject/opensearch:3.9.0
+    container_name: indexforge-opensearch
+    restart: unless-stopped
+    environment:
+      discovery.type: single-node
+      DISABLE_SECURITY_PLUGIN: "true"
+      OPENSEARCH_JAVA_OPTS: "-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+    volumes:
+      - indexforge_opensearch_data:/usr/share/opensearch/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -fsS http://localhost:9200/_cluster/health >/dev/null || exit 1",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+volumes:
+  indexforge_postgres_data:
+  indexforge_opensearch_data:
