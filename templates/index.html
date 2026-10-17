@@ -1,0 +1,214 @@
+
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="description" content="IndexForge brings your indexed documents and search infrastructure into focus.">
+    <title>IndexForge — Search, in focus.</title>
+    <link rel="stylesheet" href="{% static 'documents/dashboard.css' %}">
+    <script src="{% static 'documents/dashboard.js' %}" defer></script>
+</head>
+<body>
+    <header class="site-header">
+        <nav class="global-nav" aria-label="Main navigation">
+            <a class="wordmark" href="#home" aria-label="IndexForge home">
+                <span class="wordmark-icon">i</span>
+                <span>IndexForge</span>
+            </a>
+            <div class="nav-links">
+                <a href="#search">Search</a>
+                <a href="#platform">Platform</a>
+                <a href="#activity">Activity</a>
+            </div>
+            <div class="nav-actions">
+                <span class="nav-status">
+                    <span class="status-dot" id="sidebar-status-dot"></span>
+                    <span id="sidebar-status-title">Connecting</span>
+                </span>
+                <button class="nav-refresh" id="refresh-button" type="button" aria-label="Refresh service status">
+                    <span aria-hidden="true">↻</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+
+    <main id="home">
+        <section class="hero">
+            <div class="hero-kicker">
+                <span class="hero-kicker-dot"></span>
+                SEARCH INFRASTRUCTURE, REFINED
+            </div>
+            <h1>Your data.<br><span>In focus.</span></h1>
+            <p class="hero-copy">
+                A clearer way to search, understand, and operate your document index.
+            </p>
+
+            <form id="search-form" class="hero-search">
+                <label class="visually-hidden" for="search-query">Search documents</label>
+                <span class="search-symbol" aria-hidden="true">⌕</span>
+                <input id="search-query" name="q" type="search"
+                    placeholder="What are you looking for?" autocomplete="off">
+                <button type="submit" class="search-submit">
+                    Search <span aria-hidden="true">↗</span>
+                </button>
+            </form>
+            <div class="search-underbar">
+                <label for="collection-filter">Search within a collection</label>
+                <input id="collection-filter" name="collection"
+                    type="text" placeholder="Optional collection slug" autocomplete="off">
+                <span>Press Enter to search</span>
+            </div>
+
+            <a class="scroll-cue" href="#search" aria-label="Explore search results">
+                <span>Explore your index</span>
+                <span aria-hidden="true">↓</span>
+            </a>
+        </section>
+
+        <section class="results-section" id="search" aria-labelledby="results-heading">
+            <div class="section-intro">
+                <span class="eyebrow">DISCOVERY</span>
+                <h2 id="results-heading">The right document.<br>Without the detour.</h2>
+                <p id="search-summary">Your search results will appear here, cleanly and clearly.</p>
+            </div>
+
+            <div class="results-toolbar">
+                <span id="result-count">Ready to search</span>
+                <span class="toolbar-divider"></span>
+                <span>Powered by your index</span>
+            </div>
+            <div class="notice" id="search-notice" role="status" hidden></div>
+            <div class="results-list" id="search-results" aria-live="polite">
+                <div class="empty-state">
+                    <span class="empty-icon" aria-hidden="true">⌕</span>
+                    <h3>Start with a question.</h3>
+                    <p>Search your indexed documents to see what you find.</p>
+                </div>
+            </div>
+            <div class="pagination">
+                <span id="page-description">No results loaded</span>
+                <div class="pagination-actions">
+                    <button id="previous-page" type="button" disabled>Previous</button>
+                    <button id="next-page" type="button" disabled>Next <span aria-hidden="true">→</span></button>
+                </div>
+            </div>
+        </section>
+
+        <section class="platform-section" id="platform">
+            <div class="platform-heading">
+                <span class="eyebrow">THE INDEXFORGE PLATFORM</span>
+                <h2>Everything working<br><span>in concert.</span></h2>
+                <p>One view of the services that keep search dependable.</p>
+            </div>
+
+            <div class="platform-grid">
+                <article class="platform-card platform-card-dark">
+                    <div class="card-topline">
+                        <span class="card-symbol">01</span>
+                        <span class="status-chip" id="postgres-status">Checking</span>
+                    </div>
+                    <div class="card-content">
+                        <span class="card-overline">THE SOURCE OF TRUTH</span>
+                        <h3>PostgreSQL</h3>
+                        <p>Document records and transactional event history, kept together.</p>
+                    </div>
+                    <div class="card-foot">
+                        <span class="status-dot" id="postgres-dot"></span>
+                        <span id="postgres-detail">Checking connection</span>
+                    </div>
+                </article>
+
+                <article class="platform-card platform-card-light">
+                    <div class="card-topline">
+                        <span class="card-symbol">02</span>
+                        <span class="status-chip" id="opensearch-status">Checking</span>
+                    </div>
+                    <div class="card-content">
+                        <span class="card-overline">THE SEARCH ENGINE</span>
+                        <h3>OpenSearch</h3>
+                        <p>Indexed content ready to answer your queries.</p>
+                    </div>
+                    <div class="card-foot">
+                        <span class="status-dot" id="opensearch-dot"></span>
+                        <span id="opensearch-detail">Checking connection</span>
+                    </div>
+                </article>
+            </div>
+            <div class="platform-caption">
+                <span class="status-dot" id="overall-status-dot"></span>
+                <span id="overall-status-text">Checking system health</span>
+                <span class="caption-spacer"></span>
+                <span id="last-updated">Waiting for live data</span>
+            </div>
+        </section>
+
+        <section class="activity-section" id="activity">
+            <div class="activity-heading">
+                <div>
+                    <span class="eyebrow">BEHIND EVERY RESULT</span>
+                    <h2>Quietly keeping things moving.</h2>
+                    <p>Live event counts from the transactional indexing pipeline.</p>
+                </div>
+                <span class="activity-label">INDEXING ACTIVITY</span>
+            </div>
+
+            <div class="activity-panel">
+                <div class="activity-main">
+                    <span class="metric-label">Events processed</span>
+                    <strong class="metric-big" id="metric-processed">—</strong>
+                    <span class="metric-caption">Successfully completed events</span>
+                </div>
+                <div class="activity-stats">
+                    <div class="activity-stat">
+                        <span>All events</span>
+                        <strong id="metric-total">—</strong>
+                    </div>
+                    <div class="activity-stat">
+                        <span>Pending</span>
+                        <strong id="metric-pending">—</strong>
+                    </div>
+                    <div class="activity-stat">
+                        <span>Processing</span>
+                        <strong id="metric-processing">—</strong>
+                    </div>
+                    <div class="activity-stat">
+                        <span>Failed</span>
+                        <strong id="metric-failed">—</strong>
+                    </div>
+                    <div class="activity-stat">
+                        <span>Retries exhausted</span>
+                        <strong id="metric-exhausted">—</strong>
+                    </div>
+                </div>
+                <div class="activity-bottom">
+                    <div>
+                        <span>Pipeline status</span>
+                        <strong id="pipeline-status">Checking</strong>
+                    </div>
+                    <div>
+                        <span>Oldest pending event</span>
+                        <strong id="oldest-pending-age">—</strong>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="closing-section">
+            <span class="closing-mark">i</span>
+            <h2>Make room for<br>the right answer.</h2>
+            <a href="#home" class="back-to-top">Back to the top ↑</a>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <div class="footer-inner">
+            <a class="footer-brand" href="#home">IndexForge</a>
+            <span>Search infrastructure, made clear.</span>
+            <a href="/admin/">Administration</a>
+        </div>
+    </footer>
+</body>
+</html>

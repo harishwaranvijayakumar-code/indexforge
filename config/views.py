@@ -1,11 +1,17 @@
-"""HTTP views for the IndexForge project."""
+"""HTTP views for the IndexForge service and dashboard."""
 
 from django.db import connection
 from django.http import JsonResponse
+from django.shortcuts import render
 from django.views.decorators.http import require_GET
 
 from documents.monitoring import get_outbox_metrics
 from documents.search_client import get_opensearch_client
+
+
+def dashboard(request):
+    """Render the IndexForge operations dashboard."""
+    return render(request, "index.html")
 
 
 @require_GET
@@ -34,13 +40,8 @@ def readiness(request):
         pass
 
     try:
-        response = get_opensearch_client().cluster.health(
-            request_timeout=3,
-        )
-        checks["opensearch"] = response.get("status") in {
-            "green",
-            "yellow",
-        }
+        response = get_opensearch_client().cluster.health(request_timeout=3)
+        checks["opensearch"] = response.get("status") in {"green", "yellow"}
     except Exception:
         pass
 
