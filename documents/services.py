@@ -7,6 +7,7 @@ from django.db import IntegrityError, transaction
 from django.utils import timezone
 
 from documents.models import Collection, Document, OutboxEvent
+from documents.rebuild_lock import acquire_document_write_lock
 
 
 class DocumentConflictError(Exception):
@@ -43,9 +44,11 @@ def create_document(
     external_id: str,
     data: dict[str, Any],
 ) -> Document:
-    """Create a source document and its initial indexing event atomically."""
+    """Create a source document and its indexing event atomically."""
     try:
         with transaction.atomic():
+            acquire_document_write_lock()
+
             document = Document.objects.create(
                 collection=collection,
                 external_id=external_id,
@@ -83,11 +86,14 @@ def update_document(
     external_id: str,
     data: dict[str, Any],
 ) -> Document:
-    """Replace document data and emit a versioned indexing event atomically."""
+    """Update a source document and emit its indexing event atomically."""
     with transaction.atomic():
+        acquire_document_write_lock()
+
         try:
             document = Document.objects.select_for_update().get(
-                collection=collection, external_id=external_id
+                collection=collection,
+                external_id=external_id,
             )
         except Document.DoesNotExist as exc:
             raise DocumentNotFoundError("The requested document does not exist.") from exc
@@ -120,9 +126,12 @@ def delete_document(
 ) -> None:
     """Emit a deletion event and remove the source document atomically."""
     with transaction.atomic():
+        acquire_document_write_lock()
+
         try:
             document = Document.objects.select_for_update().get(
-                collection=collection, external_id=external_id
+                collection=collection,
+                external_id=external_id,
             )
         except Document.DoesNotExist as exc:
             raise DocumentNotFoundError("The requested document does not exist.") from exc
