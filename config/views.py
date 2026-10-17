@@ -4,6 +4,7 @@ from django.db import connection
 from django.http import JsonResponse
 from django.views.decorators.http import require_GET
 
+from documents.monitoring import get_outbox_metrics
 from documents.search_client import get_opensearch_client
 
 
@@ -53,3 +54,9 @@ def readiness(request):
         },
         status=200 if is_ready else 503,
     )
+
+
+@require_GET
+def outbox_monitoring(request):
+    """Return read-only outbox operational metrics."""
+    return JsonResponse(get_outbox_metrics())
