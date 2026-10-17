@@ -6,3 +6,4 @@ python-dotenv>=1.1,<2
 pytest>=8.4,<9
 pytest-django==4.14.0
 ruff>=0.14,<1
+opensearch-py==3.2.0
