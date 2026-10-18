@@ -14,7 +14,7 @@ def dashboard(request):
     return render(
         request,
         "index.html",
-        {"can_crawl": (request.user.is_authenticated and request.user.is_staff)},
+        {"can_crawl": True},
     )
 
 
