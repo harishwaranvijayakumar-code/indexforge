@@ -14,6 +14,7 @@ from documents.worker import (
     MAX_ATTEMPTS,
     _write_event,
     claim_events,
+    process_batch,
     process_event,
 )
 
@@ -225,3 +226,56 @@ def test_abandoned_event_at_retry_limit_becomes_failed(
     pending_event.refresh_from_db()
     assert pending_event.status == OutboxEvent.Status.FAILED
     assert pending_event.claim_token is None
+
+
+@pytest.mark.django_db
+def test_document_ingestion_flows_through_outbox_to_opensearch(
+    collection: Collection,
+) -> None:
+    document = create_document(
+        collection=collection,
+        external_id="end-to-end-document",
+        data={
+            "title": "IndexForge Integration Test",
+            "content": "Searchable integration test content.",
+            "url": "https://example.com/docs",
+        },
+    )
+
+    event = OutboxEvent.objects.get(
+        document_id=document.id,
+        event_type=OutboxEvent.EventType.UPSERT,
+    )
+
+    assert event.status == OutboxEvent.Status.PENDING
+
+    with (
+        patch("documents.worker.get_opensearch_client") as get_client,
+        patch(
+            "documents.worker.ensure_document_index",
+            return_value="test-index",
+        ),
+    ):
+        result = process_batch(batch_size=1)
+
+    assert result == {
+        "claimed": 1,
+        "processed": 1,
+        "failed_or_deferred": 0,
+    }
+
+    get_client.return_value.index.assert_called_once()
+    indexed = get_client.return_value.index.call_args.kwargs
+
+    assert indexed["index"] == "test-index"
+    assert indexed["id"] == str(document.id)
+    assert indexed["version"] == document.version
+    assert indexed["version_type"] == "external"
+    assert indexed["body"]["external_id"] == "end-to-end-document"
+    assert indexed["body"]["data"]["title"] == "IndexForge Integration Test"
+    assert indexed["body"]["data"]["content"] == "Searchable integration test content."
+
+    event.refresh_from_db()
+    assert event.status == OutboxEvent.Status.PROCESSED
+    assert event.processed_at is not None
+    assert event.claim_token is None

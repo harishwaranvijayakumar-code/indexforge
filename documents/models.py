@@ -117,3 +117,43 @@ class OutboxEvent(models.Model):
 
     def __str__(self) -> str:
         return f"{self.event_type}:{self.document_external_id}:v{self.document_version}"
+
+
+
+class CrawlJob(models.Model):
+    """Durable record of a bounded website crawl request."""
+
+    class Status(models.TextChoices):
+        QUEUED = "queued", "Queued"
+        RUNNING = "running", "Running"
+        COMPLETED = "completed", "Completed"
+        FAILED = "failed", "Failed"
+
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+    )
+    seed_url = models.URLField(max_length=2048)
+    collection_slug = models.SlugField(max_length=120)
+    collection_name = models.CharField(max_length=120)
+    max_pages = models.PositiveSmallIntegerField(default=5)
+    status = models.CharField(
+        max_length=12,
+        choices=Status.choices,
+        default=Status.QUEUED,
+        db_index=True,
+    )
+    pages_visited = models.PositiveSmallIntegerField(default=0)
+    pages_indexed = models.PositiveSmallIntegerField(default=0)
+    pages_skipped = models.PositiveSmallIntegerField(default=0)
+    error_message = models.TextField(blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+    started_at = models.DateTimeField(null=True, blank=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at", "id"]
+
+    def __str__(self):
+        return f"{self.collection_slug}: {self.status}"

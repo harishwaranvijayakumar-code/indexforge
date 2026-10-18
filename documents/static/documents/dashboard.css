@@ -898,3 +898,217 @@ button:disabled { cursor: not-allowed; opacity: .4; }
         transition-duration: .01ms !important;
     }
 }
+
+
+/* IndexForge crawl dashboard */
+
+.crawl-section {
+    width: min(var(--max-width), calc(100% - 48px));
+    margin: 0 auto;
+    padding: 90px 0;
+    scroll-margin-top: 52px;
+}
+
+.crawl-form {
+    padding: 28px;
+    border: 1px solid var(--line);
+    border-radius: 17px;
+    background: var(--white);
+}
+
+.crawl-fields {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1.2fr) minmax(120px, 0.8fr);
+    gap: 14px 18px;
+}
+
+.crawl-fields label {
+    align-self: end;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.crawl-fields input,
+.crawl-fields select {
+    width: 100%;
+    min-width: 0;
+    min-height: 43px;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    background: var(--white);
+    color: var(--ink);
+    font: inherit;
+}
+
+.crawl-fields input:focus,
+.crawl-fields select:focus {
+    border-color: var(--blue);
+    outline: 3px solid rgb(0 113 227 / 12%);
+}
+
+.crawl-fields input::placeholder {
+    color: var(--subtle);
+}
+
+.crawl-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 16px;
+    margin-top: 22px;
+}
+
+.crawl-actions p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 12px;
+    overflow-wrap: anywhere;
+}
+
+.crawl-jobs {
+    margin-top: 55px;
+}
+
+.crawl-jobs .activity-heading {
+    align-items: center;
+}
+
+.crawl-jobs .activity-heading h2 {
+    margin: 10px 0;
+    font-size: clamp(28px, 4vw, 40px);
+}
+
+#crawl-refresh {
+    min-height: 35px;
+    padding: 0 14px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--white);
+    color: var(--ink);
+    font-size: 11px;
+}
+
+#crawl-refresh:hover {
+    background: var(--paper);
+}
+
+#crawl-job-list {
+    border-top: 1px solid var(--line);
+}
+
+#crawl-job-list > p {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.crawl-job {
+    padding: 20px 2px;
+    border-bottom: 1px solid var(--line);
+}
+
+.crawl-job-heading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.crawl-job-heading strong {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    font-size: 14px;
+    font-weight: 650;
+}
+
+.crawl-status {
+    flex: 0 0 auto;
+    padding: 4px 10px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    color: var(--muted);
+    font-size: 10px;
+    text-transform: capitalize;
+}
+
+.crawl-status.status-queued {
+    border-color: #c5dcff;
+    background: #edf4ff;
+    color: #174ea6;
+}
+
+.crawl-status.status-running {
+    border-color: #c5dcff;
+    background: #edf4ff;
+    color: #174ea6;
+}
+
+.crawl-status.status-completed {
+    border-color: #b8e3ca;
+    background: #eaf7ef;
+    color: #176b38;
+}
+
+.crawl-status.status-failed {
+    border-color: #f1c9cb;
+    background: #fff1f1;
+    color: #a1262d;
+}
+
+.crawl-job-url {
+    margin: 9px 0;
+    color: var(--muted);
+    font-size: 12px;
+    overflow-wrap: anywhere;
+}
+
+.crawl-job > p:last-child {
+    font-size: 11px;
+}
+
+.crawl-job .crawl-error {
+    color: var(--red);
+    font-size: 12px;
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 760px) {
+    .crawl-section {
+        width: calc(100% - 40px);
+        padding: 70px 0;
+    }
+
+    .crawl-form {
+        padding: 20px;
+    }
+
+    .crawl-fields {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 9px;
+    }
+
+    .crawl-fields label:not(:first-child) {
+        margin-top: 10px;
+    }
+
+    .crawl-actions {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .crawl-jobs .activity-heading {
+        align-items: flex-start;
+        flex-direction: row;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .crawl-section *,
+    .crawl-section *::before,
+    .crawl-section *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+    }
+}

@@ -11,7 +11,11 @@ from documents.search_client import get_opensearch_client
 
 def dashboard(request):
     """Render the IndexForge operations dashboard."""
-    return render(request, "index.html")
+    return render(
+        request,
+        "index.html",
+        {"can_crawl": (request.user.is_authenticated and request.user.is_staff)},
+    )
 
 
 @require_GET

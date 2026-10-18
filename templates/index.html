@@ -18,17 +18,23 @@
                 <span class="wordmark-icon">i</span>
                 <span>IndexForge</span>
             </a>
+
             <div class="nav-links">
                 <a href="#search">Search</a>
+                {% if can_crawl %}
+                <a href="#crawl">Crawl</a>
+                {% endif %}
                 <a href="#platform">Platform</a>
                 <a href="#activity">Activity</a>
             </div>
+
             <div class="nav-actions">
                 <span class="nav-status">
                     <span class="status-dot" id="sidebar-status-dot"></span>
                     <span id="sidebar-status-title">Connecting</span>
                 </span>
-                <button class="nav-refresh" id="refresh-button" type="button" aria-label="Refresh service status">
+                <button class="nav-refresh" id="refresh-button"
+                    type="button" aria-label="Refresh service status">
                     <span aria-hidden="true">↻</span>
                 </button>
             </div>
@@ -41,13 +47,17 @@
                 <span class="hero-kicker-dot"></span>
                 SEARCH INFRASTRUCTURE, REFINED
             </div>
+
             <h1>Your data.<br><span>In focus.</span></h1>
+
             <p class="hero-copy">
                 A clearer way to search, understand, and operate your document index.
             </p>
 
             <form id="search-form" class="hero-search">
-                <label class="visually-hidden" for="search-query">Search documents</label>
+                <label class="visually-hidden" for="search-query">
+                    Search documents
+                </label>
                 <span class="search-symbol" aria-hidden="true">⌕</span>
                 <input id="search-query" name="q" type="search"
                     placeholder="What are you looking for?" autocomplete="off">
@@ -55,10 +65,12 @@
                     Search <span aria-hidden="true">↗</span>
                 </button>
             </form>
+
             <div class="search-underbar">
                 <label for="collection-filter">Search within a collection</label>
                 <input id="collection-filter" name="collection"
-                    type="text" placeholder="Optional collection slug" autocomplete="off">
+                    type="text" placeholder="Optional collection slug"
+                    autocomplete="off">
                 <span>Press Enter to search</span>
             </div>
 
@@ -68,11 +80,16 @@
             </a>
         </section>
 
-        <section class="results-section" id="search" aria-labelledby="results-heading">
+        <section class="results-section" id="search"
+            aria-labelledby="results-heading">
             <div class="section-intro">
                 <span class="eyebrow">DISCOVERY</span>
-                <h2 id="results-heading">The right document.<br>Without the detour.</h2>
-                <p id="search-summary">Your search results will appear here, cleanly and clearly.</p>
+                <h2 id="results-heading">
+                    The right document.<br>Without the detour.
+                </h2>
+                <p id="search-summary">
+                    Your search results will appear here, cleanly and clearly.
+                </p>
             </div>
 
             <div class="results-toolbar">
@@ -80,7 +97,9 @@
                 <span class="toolbar-divider"></span>
                 <span>Powered by your index</span>
             </div>
+
             <div class="notice" id="search-notice" role="status" hidden></div>
+
             <div class="results-list" id="search-results" aria-live="polite">
                 <div class="empty-state">
                     <span class="empty-icon" aria-hidden="true">⌕</span>
@@ -88,14 +107,74 @@
                     <p>Search your indexed documents to see what you find.</p>
                 </div>
             </div>
+
             <div class="pagination">
                 <span id="page-description">No results loaded</span>
                 <div class="pagination-actions">
-                    <button id="previous-page" type="button" disabled>Previous</button>
-                    <button id="next-page" type="button" disabled>Next <span aria-hidden="true">→</span></button>
+                    <button id="previous-page" type="button" disabled>
+                        Previous
+                    </button>
+                    <button id="next-page" type="button" disabled>
+                        Next <span aria-hidden="true">→</span>
+                    </button>
                 </div>
             </div>
         </section>
+
+        {% if can_crawl %}
+        <section class="crawl-section" id="crawl">
+            <div class="platform-heading">
+                <span class="eyebrow">WEB INDEXING</span>
+                <h2>Crawl a website.<br><span>Build your index.</span></h2>
+                <p>Queue a limited crawl and monitor its progress.</p>
+            </div>
+
+            <form id="crawl-form" class="crawl-form">
+                {% csrf_token %}
+
+                <div class="crawl-fields">
+                    <label for="crawl-url">Website URL</label>
+                    <input id="crawl-url" name="seed_url" type="url"
+                        placeholder="https://example.com/"
+                        maxlength="2048" required>
+
+                    <label for="crawl-collection-name">Collection name</label>
+                    <input id="crawl-collection-name" name="collection_name"
+                        type="text" value="Web Search"
+                        maxlength="120" required>
+
+                    <label for="crawl-pages">Maximum pages</label>
+                    <select id="crawl-pages" name="max_pages">
+                        <option value="1">1 page</option>
+                        <option value="3">3 pages</option>
+                        <option value="5" selected>5 pages</option>
+                        <option value="10">10 pages</option>
+                    </select>
+                </div>
+
+                <div class="crawl-actions">
+                    <button class="search-submit" id="crawl-submit" type="submit">
+                        Queue crawl
+                    </button>
+                    <p id="crawl-notice" role="status" aria-live="polite"></p>
+                </div>
+            </form>
+
+            <div class="crawl-jobs">
+                <div class="activity-heading">
+                    <div>
+                        <span class="eyebrow">JOB MONITOR</span>
+                        <h2>Recent crawls</h2>
+                    </div>
+                    <button id="crawl-refresh" type="button">Refresh</button>
+                </div>
+
+                <div id="crawl-job-list" aria-live="polite">
+                    <p>Loading crawl jobs…</p>
+                </div>
+            </div>
+        </section>
+        {% endif %}
 
         <section class="platform-section" id="platform">
             <div class="platform-heading">
@@ -113,7 +192,10 @@
                     <div class="card-content">
                         <span class="card-overline">THE SOURCE OF TRUTH</span>
                         <h3>PostgreSQL</h3>
-                        <p>Document records and transactional event history, kept together.</p>
+                        <p>
+                            Document records and transactional event history,
+                            kept together.
+                        </p>
                     </div>
                     <div class="card-foot">
                         <span class="status-dot" id="postgres-dot"></span>
@@ -137,6 +219,7 @@
                     </div>
                 </article>
             </div>
+
             <div class="platform-caption">
                 <span class="status-dot" id="overall-status-dot"></span>
                 <span id="overall-status-text">Checking system health</span>
@@ -150,7 +233,9 @@
                 <div>
                     <span class="eyebrow">BEHIND EVERY RESULT</span>
                     <h2>Quietly keeping things moving.</h2>
-                    <p>Live event counts from the transactional indexing pipeline.</p>
+                    <p>
+                        Live event counts from the transactional indexing pipeline.
+                    </p>
                 </div>
                 <span class="activity-label">INDEXING ACTIVITY</span>
             </div>
@@ -161,6 +246,7 @@
                     <strong class="metric-big" id="metric-processed">—</strong>
                     <span class="metric-caption">Successfully completed events</span>
                 </div>
+
                 <div class="activity-stats">
                     <div class="activity-stat">
                         <span>All events</span>
@@ -183,6 +269,7 @@
                         <strong id="metric-exhausted">—</strong>
                     </div>
                 </div>
+
                 <div class="activity-bottom">
                     <div>
                         <span>Pipeline status</span>
