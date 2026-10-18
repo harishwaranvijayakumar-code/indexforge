@@ -1,4 +1,3 @@
-
 """Bounded Locust workload for IndexForge read endpoints."""
 
 from locust import HttpUser, between, task
