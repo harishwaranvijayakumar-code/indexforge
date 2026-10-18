@@ -134,9 +134,9 @@ async function getJson(url, allowUnavailable = false) {
     if (!response.ok && !(allowUnavailable && response.status === 503)) {
         throw new Error(
             data.error ||
-                data.detail ||
-                data.message ||
-                `Request failed (${response.status}).`,
+            data.detail ||
+            data.message ||
+            `Request failed (${response.status}).`,
         );
     }
 
@@ -309,10 +309,10 @@ function renderMetrics(data) {
                 ? "Active"
                 : "Healthy"
             : status === "degraded" || status === "unhealthy"
-              ? "Needs attention"
-              : status === "unknown"
-                ? "Unknown"
-                : status.replaceAll("_", " ");
+                ? "Needs attention"
+                : status === "unknown"
+                    ? "Unknown"
+                    : status.replaceAll("_", " ");
 
     setText("pipeline-status", label);
 }
@@ -674,8 +674,8 @@ function renderCrawlJobs(jobs) {
             "p",
             "",
             `Visited: ${job.pages_visited ?? 0} · ` +
-                `Indexed: ${job.pages_indexed ?? 0} · ` +
-                `Skipped: ${job.pages_skipped ?? 0}`,
+            `Indexed: ${job.pages_indexed ?? 0} · ` +
+            `Skipped: ${job.pages_skipped ?? 0}`,
         );
 
         article.append(heading, url, progress);
@@ -1082,7 +1082,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const revealTargets = document.querySelectorAll(
             ".hero, #search, #crawl, #platform, #activity, " +
-                ".platform-card, .activity-card",
+            ".platform-card, .activity-card",
         );
 
         if (!("IntersectionObserver" in window)) return;
@@ -1149,4 +1149,4 @@ document.addEventListener("DOMContentLoaded", () => {
     } else {
         setupMotionPolish();
     }
-})();
+})(); 
