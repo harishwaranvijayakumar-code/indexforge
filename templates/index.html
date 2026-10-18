@@ -1,16 +1,44 @@
-
+﻿
 {% load static %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#ffffff">
+    <meta name="theme-color" content="#ffffff" id="theme-color-meta">
     <meta name="description" content="IndexForge brings your indexed documents and search infrastructure into focus.">
-    <title>IndexForge — Search, in focus.</title>
+    <title>IndexForge â€” Search, in focus.</title>
+
+    <script>
+        (() => {
+            try {
+                const saved = localStorage.getItem("indexforge-theme");
+                const theme = saved === "light" || saved === "dark"
+                    ? saved
+                    : (
+                        window.matchMedia("(prefers-color-scheme: dark)").matches
+                            ? "dark"
+                            : "light"
+                    );
+
+                document.documentElement.dataset.theme = theme;
+                document.querySelector('meta[name="theme-color"]')?.setAttribute(
+                    "content",
+                    theme === "dark" ? "#111113" : "#ffffff"
+                );
+            } catch (_) {
+                document.documentElement.dataset.theme =
+                    window.matchMedia("(prefers-color-scheme: dark)").matches
+                        ? "dark"
+                        : "light";
+            }
+        })();
+    </script>
+
     <link rel="stylesheet" href="{% static 'documents/dashboard.css' %}">
     <script src="{% static 'documents/dashboard.js' %}" defer></script>
 </head>
+
 <body>
     <header class="site-header">
         <nav class="global-nav" aria-label="Main navigation">
@@ -19,23 +47,44 @@
                 <span>IndexForge</span>
             </a>
 
+
             <div class="nav-links">
-                <a href="#search">Search</a>
+                <a href="#search-form">Search</a>
+                <a href="#search">Discovery</a>
+
                 {% if can_crawl %}
                 <a href="#crawl">Crawl</a>
                 {% endif %}
+
                 <a href="#platform">Platform</a>
                 <a href="#activity">Activity</a>
             </div>
+
 
             <div class="nav-actions">
                 <span class="nav-status">
                     <span class="status-dot" id="sidebar-status-dot"></span>
                     <span id="sidebar-status-title">Connecting</span>
                 </span>
-                <button class="nav-refresh" id="refresh-button"
-                    type="button" aria-label="Refresh service status">
-                    <span aria-hidden="true">↻</span>
+
+                <button
+                    class="theme-toggle"
+                    id="theme-toggle"
+                    type="button"
+                    aria-label="Switch to dark mode"
+                    aria-pressed="false"
+                    title="Switch theme"
+                >
+                    <span class="theme-toggle-icon" aria-hidden="true">â˜¾</span>
+                </button>
+
+                <button
+                    class="nav-refresh"
+                    id="refresh-button"
+                    type="button"
+                    aria-label="Refresh service status"
+                >
+                    <span aria-hidden="true">â†»</span>
                 </button>
             </div>
         </nav>
@@ -58,35 +107,54 @@
                 <label class="visually-hidden" for="search-query">
                     Search documents
                 </label>
-                <span class="search-symbol" aria-hidden="true">⌕</span>
-                <input id="search-query" name="q" type="search"
-                    placeholder="What are you looking for?" autocomplete="off">
+
+                <span class="search-symbol" aria-hidden="true">âŒ•</span>
+
+                <input
+                    id="search-query"
+                    name="q"
+                    type="search"
+                    placeholder="What are you looking for?"
+                    autocomplete="off"
+                >
+
                 <button type="submit" class="search-submit">
-                    Search <span aria-hidden="true">↗</span>
+                    Search <span aria-hidden="true">â†—</span>
                 </button>
             </form>
 
             <div class="search-underbar">
                 <label for="collection-filter">Search within a collection</label>
-                <input id="collection-filter" name="collection"
-                    type="text" placeholder="Optional collection slug"
-                    autocomplete="off">
+
+                <input
+                    id="collection-filter"
+                    name="collection"
+                    type="text"
+                    placeholder="Optional collection slug"
+                    autocomplete="off"
+                >
+
                 <span>Press Enter to search</span>
             </div>
 
-            <a class="scroll-cue" href="#search" aria-label="Explore search results">
+            <a class="scroll-cue" href="#search" aria-label="Explore your index">
                 <span>Explore your index</span>
-                <span aria-hidden="true">↓</span>
+                <span aria-hidden="true">â†“</span>
             </a>
         </section>
 
-        <section class="results-section" id="search"
-            aria-labelledby="results-heading">
+        <section
+            class="results-section"
+            id="search"
+            aria-labelledby="results-heading"
+        >
             <div class="section-intro">
                 <span class="eyebrow">DISCOVERY</span>
+
                 <h2 id="results-heading">
                     The right document.<br>Without the detour.
                 </h2>
+
                 <p id="search-summary">
                     Your search results will appear here, cleanly and clearly.
                 </p>
@@ -100,9 +168,13 @@
 
             <div class="notice" id="search-notice" role="status" hidden></div>
 
-            <div class="results-list" id="search-results" aria-live="polite">
+            <div
+                class="results-list"
+                id="search-results"
+                aria-live="polite"
+            >
                 <div class="empty-state">
-                    <span class="empty-icon" aria-hidden="true">⌕</span>
+                    <span class="empty-icon" aria-hidden="true">âŒ•</span>
                     <h3>Start with a question.</h3>
                     <p>Search your indexed documents to see what you find.</p>
                 </div>
@@ -110,12 +182,14 @@
 
             <div class="pagination">
                 <span id="page-description">No results loaded</span>
+
                 <div class="pagination-actions">
                     <button id="previous-page" type="button" disabled>
                         Previous
                     </button>
+
                     <button id="next-page" type="button" disabled>
-                        Next <span aria-hidden="true">→</span>
+                        Next <span aria-hidden="true">â†’</span>
                     </button>
                 </div>
             </div>
@@ -169,9 +243,14 @@
                 </div>
 
                 <div class="crawl-actions">
-                    <button class="search-submit" id="crawl-submit" type="submit">
+                    <button
+                        class="search-submit"
+                        id="crawl-submit"
+                        type="submit"
+                    >
                         Queue crawl
                     </button>
+
                     <p id="crawl-notice" role="status" aria-live="polite"></p>
                 </div>
             </form>
@@ -182,11 +261,12 @@
                         <span class="eyebrow">JOB MONITOR</span>
                         <h2>Recent crawls</h2>
                     </div>
+
                     <button id="crawl-refresh" type="button">Refresh</button>
                 </div>
 
                 <div id="crawl-job-list" aria-live="polite">
-                    <p>Loading crawl jobs…</p>
+                    <p>Loading crawl jobsâ€¦</p>
                 </div>
             </div>
         </section>
@@ -205,6 +285,7 @@
                         <span class="card-symbol">01</span>
                         <span class="status-chip" id="postgres-status">Checking</span>
                     </div>
+
                     <div class="card-content">
                         <span class="card-overline">THE SOURCE OF TRUTH</span>
                         <h3>PostgreSQL</h3>
@@ -213,6 +294,7 @@
                             kept together.
                         </p>
                     </div>
+
                     <div class="card-foot">
                         <span class="status-dot" id="postgres-dot"></span>
                         <span id="postgres-detail">Checking connection</span>
@@ -224,11 +306,13 @@
                         <span class="card-symbol">02</span>
                         <span class="status-chip" id="opensearch-status">Checking</span>
                     </div>
+
                     <div class="card-content">
                         <span class="card-overline">THE SEARCH ENGINE</span>
                         <h3>OpenSearch</h3>
                         <p>Indexed content ready to answer your queries.</p>
                     </div>
+
                     <div class="card-foot">
                         <span class="status-dot" id="opensearch-dot"></span>
                         <span id="opensearch-detail">Checking connection</span>
@@ -253,36 +337,41 @@
                         Live event counts from the transactional indexing pipeline.
                     </p>
                 </div>
+
                 <span class="activity-label">INDEXING ACTIVITY</span>
             </div>
 
             <div class="activity-panel">
                 <div class="activity-main">
                     <span class="metric-label">Events processed</span>
-                    <strong class="metric-big" id="metric-processed">—</strong>
+                    <strong class="metric-big" id="metric-processed">â€”</strong>
                     <span class="metric-caption">Successfully completed events</span>
                 </div>
 
                 <div class="activity-stats">
                     <div class="activity-stat">
                         <span>All events</span>
-                        <strong id="metric-total">—</strong>
+                        <strong id="metric-total">â€”</strong>
                     </div>
+
                     <div class="activity-stat">
                         <span>Pending</span>
-                        <strong id="metric-pending">—</strong>
+                        <strong id="metric-pending">â€”</strong>
                     </div>
+
                     <div class="activity-stat">
                         <span>Processing</span>
-                        <strong id="metric-processing">—</strong>
+                        <strong id="metric-processing">â€”</strong>
                     </div>
+
                     <div class="activity-stat">
                         <span>Failed</span>
-                        <strong id="metric-failed">—</strong>
+                        <strong id="metric-failed">â€”</strong>
                     </div>
+
                     <div class="activity-stat">
                         <span>Retries exhausted</span>
-                        <strong id="metric-exhausted">—</strong>
+                        <strong id="metric-exhausted">â€”</strong>
                     </div>
                 </div>
 
@@ -291,9 +380,10 @@
                         <span>Pipeline status</span>
                         <strong id="pipeline-status">Checking</strong>
                     </div>
+
                     <div>
                         <span>Oldest pending event</span>
-                        <strong id="oldest-pending-age">—</strong>
+                        <strong id="oldest-pending-age">â€”</strong>
                     </div>
                 </div>
             </div>
@@ -302,7 +392,7 @@
         <section class="closing-section">
             <span class="closing-mark">i</span>
             <h2>Make room for<br>the right answer.</h2>
-            <a href="#home" class="back-to-top">Back to the top ↑</a>
+            <a href="#home" class="back-to-top">Back to the top â†‘</a>
         </section>
     </main>
 

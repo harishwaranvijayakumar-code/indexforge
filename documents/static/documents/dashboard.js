@@ -1,8 +1,8 @@
-
 "use strict";
 
 const PAGE_SIZE = 10;
 const CRAWL_REFRESH_INTERVAL = 5000;
+const THEME_STORAGE_KEY = "indexforge-theme";
 
 const state = {
     page: 1,
@@ -14,6 +14,107 @@ const state = {
 };
 
 const $ = (id) => document.getElementById(id);
+
+/* Theme management */
+
+function applyTheme(theme, persist = false) {
+    const normalized = theme === "dark" ? "dark" : "light";
+    document.documentElement.dataset.theme = normalized;
+
+    const isDark = normalized === "dark";
+    const toggle = $("theme-toggle");
+    const icon = toggle?.querySelector(".theme-toggle-icon");
+
+    if (toggle) {
+        toggle.setAttribute("aria-pressed", String(isDark));
+        toggle.setAttribute(
+            "aria-label",
+            isDark ? "Switch to light mode" : "Switch to dark mode",
+        );
+        toggle.setAttribute(
+            "title",
+            isDark ? "Switch to light mode" : "Switch to dark mode",
+        );
+    }
+
+    if (icon) {
+        icon.textContent = isDark ? "☀" : "☾";
+    }
+
+    const themeColor = $("theme-color-meta");
+
+    if (themeColor) {
+        themeColor.setAttribute(
+            "content",
+            isDark ? "#111113" : "#ffffff",
+        );
+    }
+
+    if (persist) {
+        try {
+            localStorage.setItem(THEME_STORAGE_KEY, normalized);
+        } catch {
+            // The theme still applies to the current page.
+        }
+    }
+}
+
+function setupTheme() {
+    let initialTheme = document.documentElement.dataset.theme;
+
+    try {
+        const saved = localStorage.getItem(THEME_STORAGE_KEY);
+
+        if (saved === "light" || saved === "dark") {
+            initialTheme = saved;
+        }
+    } catch {
+        // Use the theme initialized by the HTML document.
+    }
+
+    if (initialTheme !== "light" && initialTheme !== "dark") {
+        initialTheme = window.matchMedia(
+            "(prefers-color-scheme: dark)",
+        ).matches
+            ? "dark"
+            : "light";
+    }
+
+    applyTheme(initialTheme);
+
+    const toggle = $("theme-toggle");
+
+    if (toggle) {
+        toggle.addEventListener("click", () => {
+            const current = document.documentElement.dataset.theme;
+            applyTheme(current === "dark" ? "light" : "dark", true);
+        });
+    }
+
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+
+    const updateFromSystem = (event) => {
+        try {
+            const saved = localStorage.getItem(THEME_STORAGE_KEY);
+
+            if (saved === "light" || saved === "dark") {
+                return;
+            }
+        } catch {
+            // Follow system preference if storage is unavailable.
+        }
+
+        applyTheme(event.matches ? "dark" : "light");
+    };
+
+    if (media.addEventListener) {
+        media.addEventListener("change", updateFromSystem);
+    } else if (media.addListener) {
+        media.addListener(updateFromSystem);
+    }
+}
+
+/* HTTP and shared UI helpers */
 
 async function getJson(url, allowUnavailable = false) {
     const response = await fetch(url, {
@@ -76,7 +177,11 @@ function setNotice(message, isError = false) {
 }
 
 function formatDuration(value) {
-    if (value === null || value === undefined || !Number.isFinite(Number(value))) {
+    if (
+        value === null ||
+        value === undefined ||
+        !Number.isFinite(Number(value))
+    ) {
         return "Not available";
     }
 
@@ -96,6 +201,8 @@ function formatDuration(value) {
 
     return `${days} day${days === 1 ? "" : "s"} ${hours % 24} hr`;
 }
+
+/* Service health */
 
 function updateSystemStatus(ready) {
     setText(
@@ -152,6 +259,8 @@ async function refreshHealth() {
 
     return ready;
 }
+
+/* Transactional outbox metrics */
 
 function formatCount(value) {
     const number = Number(value);
@@ -212,6 +321,8 @@ async function refreshOutbox() {
     const data = await getJson("/api/monitoring/outbox/");
     renderMetrics(data);
 }
+
+/* Search results */
 
 function displayValue(value) {
     if (value === null || value === undefined) return "";
@@ -309,7 +420,6 @@ function renderResults(results) {
         const title = document.createElement("h3");
         title.className = "result-title";
 
-        // The crawled source URL is stored in the document's data.
         const sourceUrl = getSafeHttpUrl(data.url);
 
         if (sourceUrl) {
@@ -334,7 +444,7 @@ function renderResults(results) {
             data.url ||
             "";
 
-        // Treat search highlights as untrusted text, not executable HTML.
+        // Search highlights are treated as text, never executable HTML.
         const preview = displayValue(rawPreview)
             .replace(/<[^>]*>/g, " ")
             .replace(/\s+/g, " ")
@@ -691,6 +801,8 @@ async function submitCrawl(event) {
     }
 }
 
+/* Dashboard refresh */
+
 async function refreshDashboard() {
     const button = $("refresh-button");
 
@@ -757,17 +869,124 @@ async function refreshDashboard() {
     }
 }
 
+/* Section navigation: active link and smooth scrolling */
+
 function setupNavigation() {
-    document.querySelectorAll(".nav-links a").forEach((link) => {
-        link.addEventListener("click", () => {
-            document.querySelectorAll(".nav-links a").forEach((item) => {
-                item.style.color = item === link ? "#0071e3" : "";
+    const links = [
+        ...document.querySelectorAll(".nav-links a[href^='#']"),
+    ];
+
+    const header = document.querySelector(".site-header");
+
+    const sections = links
+        .map((link) => {
+            const hash = link.getAttribute("href");
+            const target = hash ? document.querySelector(hash) : null;
+
+            return target ? { link, target, hash } : null;
+        })
+        .filter(Boolean);
+
+    if (!sections.length) return;
+
+    function getHeaderOffset() {
+        return (header?.getBoundingClientRect().bottom || 0) + 12;
+    }
+
+    function setActiveLink(activeHash) {
+        links.forEach((link) => {
+            const active = link.getAttribute("href") === activeHash;
+
+            link.classList.toggle("is-current", active);
+
+            if (active) {
+                link.setAttribute("aria-current", "location");
+            } else {
+                link.removeAttribute("aria-current");
+            }
+        });
+    }
+
+    function updateActiveLink() {
+        const marker = getHeaderOffset();
+        const visibleSections = sections
+            .map((section) => ({
+                ...section,
+                rect: section.target.getBoundingClientRect(),
+            }))
+            .filter(
+                (section) =>
+                    section.rect.bottom > marker &&
+                    section.rect.top < window.innerHeight,
+            );
+
+        if (!visibleSections.length) {
+            setActiveLink("");
+            return;
+        }
+
+        // Choose the visible navigation destination whose top is
+        // closest to the area immediately below the fixed header.
+        visibleSections.sort(
+            (a, b) =>
+                Math.abs(a.rect.top - marker) -
+                Math.abs(b.rect.top - marker),
+        );
+
+        setActiveLink(visibleSections[0].hash);
+    }
+
+    let scheduled = false;
+
+    function scheduleUpdate() {
+        if (scheduled) return;
+
+        scheduled = true;
+
+        window.requestAnimationFrame(() => {
+            updateActiveLink();
+            scheduled = false;
+        });
+    }
+
+    links.forEach((link) => {
+        link.addEventListener("click", (event) => {
+            const hash = link.getAttribute("href");
+            const target = hash ? document.querySelector(hash) : null;
+
+            if (!target) return;
+
+            event.preventDefault();
+
+            history.replaceState(null, "", hash);
+            setActiveLink(hash);
+
+            target.scrollIntoView({
+                behavior: window.matchMedia(
+                    "(prefers-reduced-motion: reduce)",
+                ).matches
+                    ? "auto"
+                    : "smooth",
+                block: "start",
             });
         });
     });
+
+    window.addEventListener("scroll", scheduleUpdate, {
+        passive: true,
+    });
+    window.addEventListener("resize", scheduleUpdate);
+    window.addEventListener("hashchange", scheduleUpdate);
+    window.addEventListener("popstate", scheduleUpdate);
+
+    updateActiveLink();
 }
 
+/* Initialize the dashboard */
+
 document.addEventListener("DOMContentLoaded", () => {
+    setupTheme();
+
     const searchForm = $("search-form");
 
     if (searchForm) {
@@ -850,3 +1069,84 @@ document.addEventListener("DOMContentLoaded", () => {
     updatePagination();
     refreshDashboard();
 });
+
+/* Motion and interaction polish */
+
+(() => {
+    function setupMotionPolish() {
+        const reduceMotion = window.matchMedia(
+            "(prefers-reduced-motion: reduce)",
+        ).matches;
+
+        if (reduceMotion) return;
+
+        const revealTargets = document.querySelectorAll(
+            ".hero, #search, #crawl, #platform, #activity, " +
+                ".platform-card, .activity-card",
+        );
+
+        if (!("IntersectionObserver" in window)) return;
+
+        revealTargets.forEach((element, index) => {
+            element.setAttribute("data-reveal", "");
+            element.style.setProperty(
+                "--reveal-delay",
+                `${Math.min(index % 4, 3) * 55}ms`,
+            );
+        });
+
+        if (revealTargets.length === 0) return;
+
+        document.documentElement.classList.add("motion-ready");
+
+        const observer = new IntersectionObserver(
+            (entries, currentObserver) => {
+                entries.forEach((entry) => {
+                    if (!entry.isIntersecting) return;
+
+                    entry.target.classList.add("is-visible");
+                    currentObserver.unobserve(entry.target);
+                });
+            },
+            {
+                threshold: 0.08,
+                rootMargin: "0px 0px -36px 0px",
+            },
+        );
+
+        revealTargets.forEach((element) => observer.observe(element));
+
+        // Animate newly rendered search results when matching CSS exists.
+        const results = document.getElementById("search-results");
+
+        if (results) {
+            const resultObserver = new MutationObserver(() => {
+                results
+                    .querySelectorAll(".result-item, .result-card")
+                    .forEach((item, index) => {
+                        if (item.dataset.motionInitialized) return;
+
+                        item.dataset.motionInitialized = "true";
+                        item.classList.add("result-enter");
+                        item.style.animationDelay =
+                            `${Math.min(index, 5) * 35}ms`;
+                    });
+            });
+
+            resultObserver.observe(results, {
+                childList: true,
+                subtree: true,
+            });
+        }
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener(
+            "DOMContentLoaded",
+            setupMotionPolish,
+            { once: true },
+        );
+    } else {
+        setupMotionPolish();
+    }
+})();
