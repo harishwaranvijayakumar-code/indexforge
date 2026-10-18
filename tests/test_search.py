@@ -44,9 +44,7 @@ def search_response():
 
 
 @pytest.mark.django_db
-def test_search_returns_source_url_and_highlighted_snippet(
-    search_response,
-):
+def test_search_returns_source_url_and_highlighted_snippet(search_response):
     with (
         patch("documents.search.get_opensearch_client") as get_client,
         patch(
@@ -66,11 +64,25 @@ def test_search_returns_source_url_and_highlighted_snippet(
     )
 
     body = get_client.return_value.search.call_args.kwargs["body"]
-    multi_match = body["query"]["bool"]["must"][0]["multi_match"]
+    boolean_query = body["query"]["bool"]
+    multi_match = boolean_query["must"][0]["multi_match"]
 
     assert multi_match["query"] == "searchable"
     assert "data.title^5" in multi_match["fields"]
+    assert "data.name^3" in multi_match["fields"]
     assert "data.content" in multi_match["fields"]
+    assert "external_id" not in multi_match["fields"]
+    assert multi_match["operator"] == "or"
+
+    assert {
+        "match_phrase": {
+            "data.title": {
+                "query": "searchable",
+                "boost": 10,
+            }
+        }
+    } in boolean_query["should"]
+
     assert body["highlight"]["fields"]["data.content"]["number_of_fragments"] == 1
 
 
@@ -98,9 +110,33 @@ def test_search_uses_content_excerpt_when_no_highlight_is_returned(
 
 
 @pytest.mark.django_db
-def test_search_applies_collection_filter_and_pagination(
+def test_search_uses_unicode_ellipsis_for_long_fallback_snippet(
     search_response,
 ):
+    hit = search_response["hits"]["hits"][0]
+    hit.pop("highlight")
+    hit["_source"]["data"]["content"] = "word " * 60
+
+    with (
+        patch("documents.search.get_opensearch_client") as get_client,
+        patch(
+            "documents.search.ensure_document_index",
+            return_value="indexforge-documents",
+        ),
+    ):
+        get_client.return_value.search.return_value = search_response
+
+        result = search_documents(query="IndexForge")
+
+    snippet = result["results"][0]["snippet"]
+
+    assert len(snippet) == 201
+    assert snippet.endswith("…")
+    assert not snippet.endswith("â€¦")
+
+
+@pytest.mark.django_db
+def test_search_applies_collection_filter_and_pagination(search_response):
     with (
         patch("documents.search.get_opensearch_client") as get_client,
         patch(
@@ -143,3 +179,4 @@ def test_search_clamps_pagination_limits(search_response):
     assert body["from"] == 0
     assert body["size"] == 50
     assert body["query"]["bool"]["must"] == [{"match_all": {}}]
+    assert body["query"]["bool"]["should"] == []

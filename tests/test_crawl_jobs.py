@@ -1,10 +1,12 @@
 import json
+from datetime import timedelta
 from unittest.mock import patch
 
 import pytest
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from django.test import Client
+from django.utils import timezone
 
 from documents.models import CrawlJob
 
@@ -155,3 +157,69 @@ def test_worker_marks_job_failed_when_crawler_raises():
     assert job.status == CrawlJob.Status.FAILED
     assert "Simulated crawler failure" in job.error_message
     assert job.finished_at is not None
+
+
+@pytest.mark.django_db
+def test_worker_marks_stale_heartbeat_job_failed():
+    old_time = timezone.now() - timedelta(minutes=20)
+
+    job = CrawlJob.objects.create(
+        seed_url="https://example.com/",
+        collection_slug="stale-heartbeat",
+        collection_name="Stale Heartbeat",
+        max_pages=2,
+        status=CrawlJob.Status.RUNNING,
+        started_at=old_time,
+        heartbeat_at=old_time,
+    )
+
+    call_command("process_crawl_jobs", once=True)
+
+    job.refresh_from_db()
+    assert job.status == CrawlJob.Status.FAILED
+    assert "no heartbeat" in job.error_message
+    assert job.finished_at is not None
+
+
+@pytest.mark.django_db
+def test_worker_marks_stale_legacy_job_failed():
+    old_time = timezone.now() - timedelta(minutes=20)
+
+    job = CrawlJob.objects.create(
+        seed_url="https://example.com/",
+        collection_slug="legacy-stale",
+        collection_name="Legacy Stale",
+        max_pages=2,
+        status=CrawlJob.Status.RUNNING,
+        started_at=old_time,
+        heartbeat_at=None,
+    )
+
+    call_command("process_crawl_jobs", once=True)
+
+    job.refresh_from_db()
+    assert job.status == CrawlJob.Status.FAILED
+    assert "no heartbeat" in job.error_message
+    assert job.finished_at is not None
+
+
+@pytest.mark.django_db
+def test_worker_leaves_active_job_running():
+    now = timezone.now()
+
+    job = CrawlJob.objects.create(
+        seed_url="https://example.com/",
+        collection_slug="active-job",
+        collection_name="Active Job",
+        max_pages=2,
+        status=CrawlJob.Status.RUNNING,
+        started_at=now - timedelta(minutes=2),
+        heartbeat_at=now,
+    )
+
+    call_command("process_crawl_jobs", once=True)
+
+    job.refresh_from_db()
+    assert job.status == CrawlJob.Status.RUNNING
+    assert job.finished_at is None
+    assert job.heartbeat_at == now

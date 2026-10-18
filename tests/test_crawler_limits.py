@@ -1,6 +1,6 @@
 """Tests for crawler page and host limits."""
 
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock, patch
 
 import httpx
 import pytest
@@ -56,7 +56,7 @@ def test_crawler_respects_page_limit_and_same_host():
         ),
     }
 
-    def fake_fetch(client, url):
+    def fake_fetch(client, url, **kwargs):
         request = httpx.Request("GET", url)
         response = httpx.Response(
             200,
@@ -93,11 +93,12 @@ def test_crawler_respects_page_limit_and_same_host():
             max_pages=2,
         )
 
-    assert fetch.call_args_list == [
-        call(fetch.call_args_list[0].args[0], start_url),
-        call(fetch.call_args_list[1].args[0], second_url),
-    ]
+    # Both pages must be fetched in order using the shared request pacer.
     assert fetch.call_count == 2
+    assert [invocation.args[1] for invocation in fetch.call_args_list] == [start_url, second_url]
+    assert all("pacer" in invocation.kwargs for invocation in fetch.call_args_list)
+
+    # Each page is created once, and neither requires an update.
     assert create_document.call_count == 2
     update_document.assert_not_called()
 

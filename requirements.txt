@@ -7,5 +7,6 @@ pytest>=8.4,<9
 pytest-django==4.14.0
 ruff>=0.14,<1
 opensearch-py==3.2.0
-httpx>=0.28,<1
+httpx==0.28.1
+httpcore==1.0.9
 beautifulsoup4>=4.13,<5

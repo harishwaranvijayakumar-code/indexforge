@@ -35,7 +35,7 @@ def crawler_setup(monkeypatch, db):
     monkeypatch.setattr(
         crawl_site,
         "get_robot_parser",
-        lambda client, start_url: robots,
+        lambda client, url, **kwargs: robots,
     )
     monkeypatch.setattr(crawl_site.time, "sleep", lambda seconds: None)
 
@@ -48,14 +48,17 @@ def crawler_setup(monkeypatch, db):
 
 
 def run_crawl(monkeypatch, html):
+    """Run the crawler with a mocked HTML response."""
     response = httpx.Response(
         200,
         request=httpx.Request("GET", URL),
+        headers={"content-type": "text/html"},
     )
+
     monkeypatch.setattr(
         crawl_site,
         "fetch_limited",
-        lambda client, url: (response, html.encode("utf-8")),
+        lambda client, url, **kwargs: (response, html.encode("utf-8")),
     )
 
     output = StringIO()

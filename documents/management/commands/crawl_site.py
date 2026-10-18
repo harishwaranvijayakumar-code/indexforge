@@ -24,6 +24,32 @@ REQUEST_DELAY_SECONDS = 1.0
 REQUEST_TIMEOUT_SECONDS = 10.0
 
 
+class RequestPacer:
+    """Enforce a minimum delay between completed outbound HTTP requests."""
+
+    def __init__(self, interval: float = REQUEST_DELAY_SECONDS):
+        if interval < 0:
+            raise ValueError("Request interval cannot be negative.")
+
+        self.interval = interval
+        self.last_request: float | None = None
+
+    def wait(self) -> None:
+        """Wait until the next outbound HTTP request is permitted."""
+        if self.last_request is None:
+            return
+
+        elapsed = time.monotonic() - self.last_request
+        delay = self.interval - elapsed
+
+        if delay > 0:
+            time.sleep(delay)
+
+    def record(self) -> None:
+        """Record when an outbound HTTP request has finished."""
+        self.last_request = time.monotonic()
+
+
 def normalize_url(url: str) -> str:
     """Normalize a URL and reject unsupported URL forms."""
     parsed = urlparse(url.strip())
@@ -95,48 +121,59 @@ def validate_public_host(url: str) -> None:
             raise ValueError("Private, local, and non-public IP destinations are blocked.")
 
 
-def fetch_limited(client: httpx.Client, url: str) -> tuple[httpx.Response, bytes]:
+def fetch_limited(
+    client: httpx.Client,
+    url: str,
+    pacer: RequestPacer | None = None,
+) -> tuple[httpx.Response, bytes]:
     """Fetch an HTML page without following redirects or exceeding size limits."""
-    with client.stream("GET", url, follow_redirects=False) as response:
-        if response.status_code in {301, 302, 303, 307, 308}:
-            location = response.headers.get("location")
-            if not location:
-                raise ValueError("Redirect response did not provide a destination.")
+    request_pacer = pacer or RequestPacer()
+    request_pacer.wait()
 
-            destination = normalize_url(urljoin(url, location))
-            validate_public_host(destination)
-            raise ValueError(f"Redirect encountered; restart crawl at {destination}")
+    try:
+        with client.stream("GET", url, follow_redirects=False) as response:
+            if response.status_code in {301, 302, 303, 307, 308}:
+                location = response.headers.get("location")
+                if not location:
+                    raise ValueError("Redirect response did not provide a destination.")
 
-        response.raise_for_status()
+                destination = normalize_url(urljoin(url, location))
+                validate_public_host(destination)
+                raise ValueError(f"Redirect encountered; restart crawl at {destination}")
 
-        content_type = response.headers.get("content-type", "").lower()
-        if "text/html" not in content_type:
-            raise ValueError("Response is not HTML.")
+            response.raise_for_status()
 
-        declared_length = response.headers.get("content-length")
-        if declared_length:
-            try:
-                content_length = int(declared_length)
-            except ValueError as exc:
-                raise ValueError("Invalid Content-Length header.") from exc
+            content_type = response.headers.get("content-type", "").lower()
+            if "text/html" not in content_type:
+                raise ValueError("Response is not HTML.")
 
-            if content_length < 0:
-                raise ValueError("Invalid Content-Length header.")
-            if content_length > MAX_RESPONSE_BYTES:
-                raise ValueError("Page exceeds the 2 MB response limit.")
+            declared_length = response.headers.get("content-length")
+            if declared_length:
+                try:
+                    content_length = int(declared_length)
+                except ValueError as exc:
+                    raise ValueError("Invalid Content-Length header.") from exc
 
-        body = bytearray()
-        for chunk in response.iter_bytes():
-            body.extend(chunk)
-            if len(body) > MAX_RESPONSE_BYTES:
-                raise ValueError("Page exceeds the 2 MB response limit.")
+                if content_length < 0:
+                    raise ValueError("Invalid Content-Length header.")
+                if content_length > MAX_RESPONSE_BYTES:
+                    raise ValueError("Page exceeds the 2 MB response limit.")
 
-        return response, bytes(body)
+            body = bytearray()
+            for chunk in response.iter_bytes():
+                body.extend(chunk)
+                if len(body) > MAX_RESPONSE_BYTES:
+                    raise ValueError("Page exceeds the 2 MB response limit.")
+
+            return response, bytes(body)
+    finally:
+        request_pacer.record()
 
 
 def get_robot_parser(
     client: httpx.Client,
     start_url: str,
+    pacer: RequestPacer | None = None,
 ) -> RobotFileParser:
     """Fetch robots.txt, failing closed when its rules cannot be verified."""
     parsed = urlparse(start_url)
@@ -146,6 +183,9 @@ def get_robot_parser(
     parser = RobotFileParser()
     parser.set_url(robots_url)
     parser.parse([])
+
+    request_pacer = pacer or RequestPacer()
+    request_pacer.wait()
 
     try:
         with client.stream(
@@ -191,6 +231,8 @@ def get_robot_parser(
     except (httpx.HTTPError, ValueError, OSError):
         parser.parse(["User-agent: *", "Disallow: /"])
         return parser
+    finally:
+        request_pacer.record()
 
 
 class Command(BaseCommand):
@@ -240,11 +282,11 @@ class Command(BaseCommand):
         )
 
         client = create_safe_client(user_agent=USER_AGENT)
+        pacer = RequestPacer()
 
         indexed = 0
         skipped = 0
         visited = set()
-        last_request = 0.0
 
         def save_progress(completed=False):
             if job is None:
@@ -254,6 +296,7 @@ class Command(BaseCommand):
                 "pages_visited": len(visited),
                 "pages_indexed": indexed,
                 "pages_skipped": skipped,
+                "heartbeat_at": timezone.now(),
             }
 
             if completed:
@@ -266,7 +309,7 @@ class Command(BaseCommand):
             ).update(**updates)
 
         try:
-            robots = get_robot_parser(client, start_url)
+            robots = get_robot_parser(client, start_url, pacer=pacer)
             queue = deque([start_url])
 
             while queue and len(visited) < max_pages:
@@ -285,12 +328,7 @@ class Command(BaseCommand):
 
                 try:
                     validate_public_host(url)
-                    delay = REQUEST_DELAY_SECONDS - (time.monotonic() - last_request)
-                    if delay > 0:
-                        time.sleep(delay)
-
-                    response, body = fetch_limited(client, url)
-                    last_request = time.monotonic()
+                    response, body = fetch_limited(client, url, pacer=pacer)
                 except (ValueError, httpx.HTTPError, OSError) as exc:
                     self.stderr.write(f"Skipped {url}: {exc}")
                     skipped += 1

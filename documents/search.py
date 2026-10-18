@@ -41,15 +41,17 @@ def search_documents(
     filters: list[dict[str, Any]] = [
         {"term": {"is_deleted": False}},
     ]
+
     if collection_id:
         filters.append({"term": {"collection_id": collection_id}})
 
     if query.strip():
+        normalized_query = query.strip()
+
         search_query: dict[str, Any] = {
             "multi_match": {
-                "query": query.strip(),
+                "query": normalized_query,
                 "fields": [
-                    "external_id",
                     "data.title^5",
                     "data.name^3",
                     "data.content",
@@ -57,10 +59,31 @@ def search_documents(
                     "data.category",
                 ],
                 "type": "best_fields",
+                "operator": "or",
             }
         }
+
+        relevance_boosts = [
+            {
+                "match_phrase": {
+                    "data.title": {
+                        "query": normalized_query,
+                        "boost": 10,
+                    }
+                }
+            },
+            {
+                "match_phrase": {
+                    "data.name": {
+                        "query": normalized_query,
+                        "boost": 6,
+                    }
+                }
+            },
+        ]
     else:
         search_query = {"match_all": {}}
+        relevance_boosts = []
 
     response = get_opensearch_client().search(
         index=ensure_document_index(),
@@ -71,6 +94,7 @@ def search_documents(
                 "bool": {
                     "filter": filters,
                     "must": [search_query],
+                    "should": relevance_boosts,
                 }
             },
             "sort": [{"_score": "desc"}, {"id": "asc"}],
