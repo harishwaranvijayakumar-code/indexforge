@@ -1,4 +1,3 @@
-
 """Process queued website crawl jobs."""
 
 import time
@@ -66,9 +65,7 @@ class Command(BaseCommand):
                     error_message=str(exc)[:4000],
                     finished_at=timezone.now(),
                 )
-                self.stderr.write(
-                    self.style.ERROR(f"Crawl job {job.id} failed: {exc}")
-                )
+                self.stderr.write(self.style.ERROR(f"Crawl job {job.id} failed: {exc}"))
 
             if options["once"]:
                 return
@@ -88,7 +85,5 @@ class Command(BaseCommand):
             job.status = CrawlJob.Status.RUNNING
             job.started_at = timezone.now()
             job.error_message = ""
-            job.save(
-                update_fields=["status", "started_at", "error_message"]
-            )
+            job.save(update_fields=["status", "started_at", "error_message"])
             return job

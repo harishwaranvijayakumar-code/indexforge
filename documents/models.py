@@ -119,7 +119,6 @@ class OutboxEvent(models.Model):
         return f"{self.event_type}:{self.document_external_id}:v{self.document_version}"
 
 
-
 class CrawlJob(models.Model):
     """Durable record of a bounded website crawl request."""
 

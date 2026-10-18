@@ -1,4 +1,3 @@
-
 """Validation helpers for dashboard crawl requests."""
 
 from urllib.parse import urlparse
