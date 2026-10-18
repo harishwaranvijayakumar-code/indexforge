@@ -900,6 +900,7 @@ button:disabled { cursor: not-allowed; opacity: .4; }
 }
 
 
+
 /* IndexForge crawl dashboard */
 
 .crawl-section {
@@ -918,12 +919,21 @@ button:disabled { cursor: not-allowed; opacity: .4; }
 
 .crawl-fields {
     display: grid;
-    grid-template-columns: minmax(0, 2fr) minmax(0, 1.2fr) minmax(120px, 0.8fr);
-    gap: 14px 18px;
+    grid-template-columns:
+        minmax(0, 2fr)
+        minmax(0, 1.2fr)
+        minmax(120px, 0.8fr);
+    gap: 18px;
 }
 
-.crawl-fields label {
-    align-self: end;
+.crawl-field {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.crawl-field label {
     color: var(--muted);
     font-size: 11px;
     font-weight: 600;
@@ -1033,12 +1043,7 @@ button:disabled { cursor: not-allowed; opacity: .4; }
     text-transform: capitalize;
 }
 
-.crawl-status.status-queued {
-    border-color: #c5dcff;
-    background: #edf4ff;
-    color: #174ea6;
-}
-
+.crawl-status.status-queued,
 .crawl-status.status-running {
     border-color: #c5dcff;
     background: #edf4ff;
@@ -1086,11 +1091,7 @@ button:disabled { cursor: not-allowed; opacity: .4; }
 
     .crawl-fields {
         grid-template-columns: minmax(0, 1fr);
-        gap: 9px;
-    }
-
-    .crawl-fields label:not(:first-child) {
-        margin-top: 10px;
+        gap: 16px;
     }
 
     .crawl-actions {

@@ -133,23 +133,39 @@
                 {% csrf_token %}
 
                 <div class="crawl-fields">
-                    <label for="crawl-url">Website URL</label>
-                    <input id="crawl-url" name="seed_url" type="url"
-                        placeholder="https://example.com/"
-                        maxlength="2048" required>
+                    <div class="crawl-field">
+                        <label for="crawl-url">Website URL</label>
+                        <input
+                            id="crawl-url"
+                            name="seed_url"
+                            type="url"
+                            placeholder="https://example.com/"
+                            maxlength="2048"
+                            required
+                        >
+                    </div>
 
-                    <label for="crawl-collection-name">Collection name</label>
-                    <input id="crawl-collection-name" name="collection_name"
-                        type="text" value="Web Search"
-                        maxlength="120" required>
+                    <div class="crawl-field">
+                        <label for="crawl-collection-name">Collection name</label>
+                        <input
+                            id="crawl-collection-name"
+                            name="collection_name"
+                            type="text"
+                            value="Web Search"
+                            maxlength="120"
+                            required
+                        >
+                    </div>
 
-                    <label for="crawl-pages">Maximum pages</label>
-                    <select id="crawl-pages" name="max_pages">
-                        <option value="1">1 page</option>
-                        <option value="3">3 pages</option>
-                        <option value="5" selected>5 pages</option>
-                        <option value="10">10 pages</option>
-                    </select>
+                    <div class="crawl-field">
+                        <label for="crawl-pages">Maximum pages</label>
+                        <select id="crawl-pages" name="max_pages">
+                            <option value="1">1 page</option>
+                            <option value="3">3 pages</option>
+                            <option value="5" selected>5 pages</option>
+                            <option value="10">10 pages</option>
+                        </select>
+                    </div>
                 </div>
 
                 <div class="crawl-actions">
